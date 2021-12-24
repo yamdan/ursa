@@ -53,6 +53,11 @@ pub fn prove_bounded_num(
         }));
     }
 
+    if val < lower || upper < val {
+        let kind = R1CSErrorKind::ValueOverflow;
+        return Err(R1CSError::from_kind(kind));
+    }
+
     let a = val - lower;
     let b = upper - val;
 

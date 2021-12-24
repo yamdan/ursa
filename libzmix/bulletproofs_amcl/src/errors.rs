@@ -138,6 +138,9 @@ pub enum R1CSErrorKind {
         /// The description of the reasons for the error.
         description: String,
     },
+
+    #[fail(display = "attempt to subtract with overflow. Input a val that satisfies lower < val < upper.")]
+    ValueOverflow,
 }
 
 #[derive(Debug)]
