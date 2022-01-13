@@ -6,7 +6,6 @@ use crate::r1cs::{ConstraintSystem, LinearCombination, Prover, R1CSProof, Verifi
 use amcl_wrapper::field_elem::FieldElement;
 use amcl_wrapper::group_elem_g1::{G1Vector, G1};
 use merlin::Transcript;
-use rand::{CryptoRng, Rng};
 
 /// Constraints for proving v lies in [min, max].
 /// Ensure v - min and max - v are positive numbers and don't overflow.
@@ -40,26 +39,26 @@ pub fn bound_check_gadget<CS: ConstraintSystem>(
     Ok(())
 }
 
-pub fn prove_bounded_num<R: Rng + CryptoRng>(
+pub fn prove_bounded_num(
     val: u64,
     blinding: Option<FieldElement>,
     lower: u64,
     upper: u64,
     max_bits_in_val: usize,
-    rng: Option<&mut R>,
     prover: &mut Prover,
 ) -> Result<Vec<G1>, R1CSError> {
-    check_for_blindings_or_rng!(blinding, rng)?;
+    if blinding.is_none() {
+        return Err(R1CSError::from(R1CSErrorKind::GadgetError {
+            description: String::from("Since blindings is None, provide"),
+        }));
+    }
 
     let a = val - lower;
     let b = upper - val;
 
     let mut comms = vec![];
 
-    let (com_v, var_v) = prover.commit(
-        val.into(),
-        blinding.unwrap_or_else(|| FieldElement::random_using_rng(rng.unwrap())),
-    );
+    let (com_v, var_v) = prover.commit(val.into(), blinding.unwrap());
     let quantity_v = AllocatedQuantity {
         variable: var_v,
         assignment: Some(val.into()),
@@ -132,13 +131,12 @@ pub fn verify_bounded_num(
 
 /// Accepts the num for which the bounds have to proved and optionally the randomness used in committing to that number.
 /// This randomness argument is accepted so that this can be used as a sub-protocol where the protocol on upper layer will create the commitment.
-pub fn gen_proof_of_bounded_num<R: Rng + CryptoRng>(
+pub fn gen_proof_of_bounded_num(
     val: u64,
     blinding: Option<FieldElement>,
     lower: u64,
     upper: u64,
     max_bits_in_val: usize,
-    rng: Option<&mut R>,
     transcript_label: &'static [u8],
     g: &G1,
     h: &G1,
@@ -148,15 +146,7 @@ pub fn gen_proof_of_bounded_num<R: Rng + CryptoRng>(
     let mut prover_transcript = Transcript::new(transcript_label);
     let mut prover = Prover::new(g, h, &mut prover_transcript);
 
-    let comms = prove_bounded_num(
-        val,
-        blinding,
-        lower,
-        upper,
-        max_bits_in_val,
-        rng,
-        &mut prover,
-    )?;
+    let comms = prove_bounded_num(val, blinding, lower, upper, max_bits_in_val, &mut prover)?;
     let proof = prover.prove(G, H)?;
 
     Ok((proof, comms))
@@ -206,20 +196,8 @@ mod tests {
         let n = 32;
 
         let label = b"BoundsTest";
-        let (proof, commitments) = gen_proof_of_bounded_num(
-            v,
-            randomness,
-            min,
-            max,
-            n,
-            Some(&mut rng),
-            label,
-            &g,
-            &h,
-            &G,
-            &H,
-        )
-        .unwrap();
+        let (proof, commitments) =
+            gen_proof_of_bounded_num(v, randomness, min, max, n, label, &g, &h, &G, &H).unwrap();
 
         verify_proof_of_bounded_num(min, max, n, proof, commitments, label, &g, &h, &G, &H)
             .unwrap();

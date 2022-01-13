@@ -51,33 +51,30 @@ mod tests {
 
         let comms_1 = prove_bounded_num(
             v_1,
-            None,
+            Some(FieldElement::random()),
             min_1,
             max_1,
             max_bits_in_val,
-            Some(&mut rng),
             &mut prover,
         )
         .unwrap();
 
         let comms_2 = prove_bounded_num(
             v_2,
-            None,
+            Some(FieldElement::random()),
             min_2,
             max_2,
             max_bits_in_val,
-            Some(&mut rng),
             &mut prover,
         )
         .unwrap();
 
         let comms_3 = prove_bounded_num(
             v_3,
-            None,
+            Some(FieldElement::random()),
             min_3,
             max_3,
             max_bits_in_val,
-            Some(&mut rng),
             &mut prover,
         )
         .unwrap();
@@ -130,11 +127,10 @@ mod tests {
 
         let comms_1 = prove_bounded_num(
             v,
-            None,
+            Some(FieldElement::random()),
             min,
             max,
             max_bits_in_val,
-            Some(&mut rng),
             &mut prover,
         )
         .unwrap();
