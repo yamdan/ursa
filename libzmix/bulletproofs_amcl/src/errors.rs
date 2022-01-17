@@ -139,7 +139,7 @@ pub enum R1CSErrorKind {
         description: String,
     },
 
-    #[fail(display = "attempt to subtract with overflow. Input a val that satisfies lower < val < upper.")]
+    #[fail(display = "attempt to subtract with overflow. Input a val that satisfies lower <= val <= upper.")]
     ValueOverflow,
 }
 
