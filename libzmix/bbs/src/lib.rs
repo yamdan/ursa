@@ -91,6 +91,8 @@ pub mod errors;
 pub mod issuer;
 /// BBS+ key classes
 pub mod keys;
+/// Methods and structs for creating proofs of knowledge of commitments
+pub mod pok_cmt;
 /// Methods and structs for creating signature proofs of knowledge
 pub mod pok_sig;
 /// Represents steps taken by the prover to receive a BBS+ signature
@@ -764,12 +766,13 @@ fn rand_non_zero_fr() -> Fr {
 /// Convenience importer
 pub mod prelude {
     pub use super::{
-        errors::prelude::*, issuer::Issuer, keys::prelude::*, messages::*, pok_sig::prelude::*,
-        pok_vc::prelude::*, prover::Prover, signature::prelude::*, verifier::Verifier,
-        BlindSignatureContext, Commitment, CommitmentBuilder, GeneratorG1, GeneratorG2, HashElem,
-        ProofChallenge, ProofNonce, ProofRequest, RandomElem, SignatureBlinding, SignatureMessage,
-        SignatureProof, ToVariableLengthBytes, FR_COMPRESSED_SIZE, G1_COMPRESSED_SIZE,
-        G1_UNCOMPRESSED_SIZE, G2_COMPRESSED_SIZE, G2_UNCOMPRESSED_SIZE,
+        errors::prelude::*, issuer::Issuer, keys::prelude::*, messages::*, pok_cmt::prelude::*,
+        pok_sig::prelude::*, pok_vc::prelude::*, prover::Prover, signature::prelude::*,
+        verifier::Verifier, BlindSignatureContext, Commitment, CommitmentBuilder, GeneratorG1,
+        GeneratorG2, HashElem, ProofChallenge, ProofNonce, ProofRequest, RandomElem,
+        SignatureBlinding, SignatureMessage, SignatureProof, ToVariableLengthBytes,
+        FR_COMPRESSED_SIZE, G1_COMPRESSED_SIZE, G1_UNCOMPRESSED_SIZE, G2_COMPRESSED_SIZE,
+        G2_UNCOMPRESSED_SIZE,
     };
 }
 
