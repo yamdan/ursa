@@ -4,10 +4,7 @@ use crate::{
     Commitment, CommitmentBuilder, GeneratorG1, ProofChallenge, ProofNonce, SignatureMessage,
 };
 
-use ff_zeroize::Field;
-use pairing_plus::bls12_381::Fr;
 use pairing_plus::serdes::SerDes;
-use rand::thread_rng;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter, Result as FmtResult};
 
@@ -26,7 +23,7 @@ pub struct PoKOfCommitment {
     /// index i
     i: usize,
     /// Commitment c
-    c: Commitment,
+    pub c: Commitment,
     /// For proving relation c == h1^m h0^r
     pok_vc: ProverCommittedG1,
     /// Secrets: m and r
@@ -82,14 +79,12 @@ impl PoKOfCommitment {
         base_r: &GeneratorG1,
         m: &SignatureMessage,
         blinding_m: &ProofNonce,
+        r: &ProofNonce,
     ) -> Self {
-        let mut rng = thread_rng();
-        let r = Fr::random(&mut rng);
-
         // c
         let mut builder = CommitmentBuilder::new();
         builder.add(base_m, m); // h_1^m
-        builder.add(base_r, &SignatureMessage::from(r)); // h_0^r
+        builder.add(base_r, r); // h_0^r
         let c = builder.finalize(); // h_1^m * h_0^r
 
         // pok_vc and secrets
@@ -98,7 +93,7 @@ impl PoKOfCommitment {
         committing.commit_with(base_m, blinding_m);
         secrets.push(*m);
         committing.commit(base_r);
-        secrets.push(SignatureMessage::from(r));
+        secrets.push(SignatureMessage::from(r.as_ref()));
         let pok_vc = committing.finish();
 
         Self {
