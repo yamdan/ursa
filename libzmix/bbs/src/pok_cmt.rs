@@ -1,19 +1,22 @@
-use pairing_plus::bls12_381::Fr;
-use pairing_plus::serdes::SerDes;
-use rand::thread_rng;
-use serde::{Deserialize, Serialize};
-
+use crate::errors::prelude::BBSError;
 use crate::pok_vc::prelude::*;
-use crate::prelude::BBSError;
 use crate::{
     Commitment, CommitmentBuilder, GeneratorG1, ProofChallenge, ProofNonce, SignatureMessage,
 };
 
 use ff_zeroize::Field;
+use pairing_plus::bls12_381::Fr;
+use pairing_plus::serdes::SerDes;
+use rand::thread_rng;
+use serde::{Deserialize, Serialize};
+use std::fmt::{Display, Formatter, Result as FmtResult};
+
+#[cfg(feature = "wasm")]
+use wasm_bindgen::prelude::*;
 
 /// Convenience importing module
 pub mod prelude {
-    pub use super::{PoKOfCommitment, PoKOfCommitmentProof};
+    pub use super::{PoKOfCommitment, PoKOfCommitmentProof, PoKOfCommitmentProofStatus};
 }
 
 /// Proof of Knowledge of a Commitment that is used by the prover
@@ -28,6 +31,34 @@ pub struct PoKOfCommitment {
     pok_vc: ProverCommittedG1,
     /// Secrets: m and r
     secrets: Vec<SignatureMessage>,
+}
+
+/// Indicates the status returned from `PoKOfSignatureProof`
+#[cfg_attr(feature = "wasm", wasm_bindgen)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub enum PoKOfCommitmentProofStatus {
+    /// The proof verified
+    Success,
+    /// The proof failed because the proof of knowledge failed
+    BadProof,
+}
+
+impl PoKOfCommitmentProofStatus {
+    /// Return whether the proof succeeded or not
+    pub fn is_valid(self) -> bool {
+        matches!(self, PoKOfCommitmentProofStatus::Success)
+    }
+}
+
+impl Display for PoKOfCommitmentProofStatus {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        match *self {
+            PoKOfCommitmentProofStatus::Success => write!(f, "Success"),
+            PoKOfCommitmentProofStatus::BadProof => {
+                write!(f, "An invalid proof was supplied")
+            }
+        }
+    }
 }
 
 /// The actual proof that is sent from prover to verifier.
@@ -116,5 +147,24 @@ impl PoKOfCommitmentProof {
             .serialize(&mut bytes, false)
             .unwrap();
         bytes
+    }
+
+    /// Get the response from post-challenge phase of the Sigma protocol for the commited message.
+    /// Used when comparing message equality
+    pub fn get_resp_for_message(&self) -> Result<SignatureMessage, BBSError> {
+        Ok(SignatureMessage(self.proof_vc.responses[0]))
+    }
+
+    /// Validate the proof
+    pub fn verify(
+        &self,
+        bases: &[GeneratorG1],
+        challenge: &ProofChallenge,
+    ) -> Result<PoKOfCommitmentProofStatus, BBSError> {
+        match self.proof_vc.verify(bases, &self.c, challenge) {
+            Ok(true) => Ok(PoKOfCommitmentProofStatus::Success),
+            Ok(false) => Ok(PoKOfCommitmentProofStatus::BadProof),
+            Err(e) => Err(BBSError::from(e)),
+        }
     }
 }
