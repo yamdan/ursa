@@ -49,7 +49,7 @@ impl TranscriptProtocol for Transcript {
     }
 
     fn commit_point(&mut self, label: &'static [u8], point: &G1) {
-        self.append_message(label, &point.to_bytes());
+        self.append_message(label, &point.to_bytes(true));
     }
 
     fn challenge_scalar(&mut self, label: &'static [u8]) -> FieldElement {

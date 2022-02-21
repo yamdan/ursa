@@ -16,9 +16,9 @@ criterion = "0.3"
 failure = "0.1"
 
 [dependencies.amcl_wrapper]
-version = "0.3.5"
+git = "https://github.com/yamdan/amcl_rust_wrapper.git"
 default-features = false
-features = ["bls381"]
+features = ["bls381", "wasm"]
 
 [features]
 default = ["bls381"]
@@ -30,3 +30,5 @@ ed25519 = ["amcl_wrapper/ed25519"]
 [[bench]]
 name = "vec_poly_eval"
 harness = false
+
+[workspace]

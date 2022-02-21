@@ -19,14 +19,14 @@ pub fn get_generators(prefix: &str, n: usize) -> Vec<G1> {
 pub fn gen_challenges(input: &[&G1], state: &mut Vec<u8>, n: usize) -> Vec<FieldElement> {
     let mut r = Vec::<FieldElement>::with_capacity(n);
     for i in 0..input.len() {
-        state.extend_from_slice(&input[i].to_bytes());
+        state.extend_from_slice(&input[i].to_bytes(true));
     }
     r.push(FieldElement::from_msg_hash(&state));
 
     let gen = G1::generator();
     for _ in 1..n {
         let _p = &gen * r.last().unwrap();
-        state.extend_from_slice(&_p.to_bytes());
+        state.extend_from_slice(&_p.to_bytes(true));
         r.push(FieldElement::from_msg_hash(&state));
     }
     r
