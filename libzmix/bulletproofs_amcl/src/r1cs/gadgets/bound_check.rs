@@ -46,7 +46,7 @@ pub fn prove_bounded_num(
     upper: u64,
     max_bits_in_val: usize,
     prover: &mut Prover,
-) -> Result<Vec<G1>, R1CSError> {
+) -> Result<(G1, [G1; 2]), R1CSError> {
     if blinding.is_none() {
         return Err(R1CSError::from(R1CSErrorKind::GadgetError {
             description: String::from("Since blindings is None, provide"),
@@ -61,28 +61,23 @@ pub fn prove_bounded_num(
     let a = val - lower;
     let b = upper - val;
 
-    let mut comms = vec![];
-
     let (com_v, var_v) = prover.commit(val.into(), blinding.unwrap());
     let quantity_v = AllocatedQuantity {
         variable: var_v,
         assignment: Some(val.into()),
     };
-    comms.push(com_v);
 
     let (com_a, var_a) = prover.commit(a.into(), FieldElement::random());
     let quantity_a = AllocatedQuantity {
         variable: var_a,
         assignment: Some(a.into()),
     };
-    comms.push(com_a);
 
     let (com_b, var_b) = prover.commit(b.into(), FieldElement::random());
     let quantity_b = AllocatedQuantity {
         variable: var_b,
         assignment: Some(b.into()),
     };
-    comms.push(com_b);
 
     bound_check_gadget(
         prover,
@@ -94,29 +89,29 @@ pub fn prove_bounded_num(
         max_bits_in_val,
     )?;
 
-    Ok(comms)
+    Ok((com_v, [com_a, com_b]))
 }
 
 pub fn verify_bounded_num(
     lower: u64,
     upper: u64,
     max_bits_in_val: usize,
-    mut commitments: Vec<G1>,
+    commitments: &(G1, [G1; 2]),
     verifier: &mut Verifier,
 ) -> Result<(), R1CSError> {
-    let var_v = verifier.commit(commitments.remove(0));
+    let var_v = verifier.commit(commitments.0.clone());
     let quantity_v = AllocatedQuantity {
         variable: var_v,
         assignment: None,
     };
 
-    let var_a = verifier.commit(commitments.remove(0));
+    let var_a = verifier.commit(commitments.1[0].clone());
     let quantity_a = AllocatedQuantity {
         variable: var_a,
         assignment: None,
     };
 
-    let var_b = verifier.commit(commitments.remove(0));
+    let var_b = verifier.commit(commitments.1[1].clone());
     let quantity_b = AllocatedQuantity {
         variable: var_b,
         assignment: None,
@@ -147,7 +142,7 @@ pub fn gen_proof_of_bounded_num(
     h: &G1,
     G: &G1Vector,
     H: &G1Vector,
-) -> Result<(R1CSProof, Vec<G1>), R1CSError> {
+) -> Result<(R1CSProof, (G1, [G1; 2])), R1CSError> {
     let mut prover_transcript = Transcript::new(transcript_label);
     let mut prover = Prover::new(g, h, &mut prover_transcript);
 
@@ -162,7 +157,7 @@ pub fn verify_proof_of_bounded_num(
     upper: u64,
     max_bits_in_val: usize,
     proof: R1CSProof,
-    commitments: Vec<G1>,
+    commitments: &(G1, [G1; 2]),
     transcript_label: &'static [u8],
     g: &G1,
     h: &G1,
@@ -204,7 +199,7 @@ mod tests {
         let (proof, commitments) =
             gen_proof_of_bounded_num(v, randomness, min, max, n, label, &g, &h, &G, &H).unwrap();
 
-        verify_proof_of_bounded_num(min, max, n, proof, commitments, label, &g, &h, &G, &H)
+        verify_proof_of_bounded_num(min, max, n, proof, &commitments, label, &g, &h, &G, &H)
             .unwrap();
     }
 }
