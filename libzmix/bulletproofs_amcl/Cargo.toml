@@ -18,7 +18,7 @@ ff-zeroize = "0.6"
 pairing-plus = "0.19"
 
 [dependencies.amcl_wrapper]
-git = "https://github.com/yamdan/amcl_rust_wrapper.git"
+git = "https://github.com/zkp-ld/amcl_rust_wrapper.git"
 default-features = false
 features = ["bls381", "wasm"]
 
